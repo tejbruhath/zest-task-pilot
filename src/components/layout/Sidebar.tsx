@@ -1,32 +1,38 @@
-
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { 
-  ChartBar, 
-  List, 
-  Calendar, 
-  User, 
-  MessageSquare, 
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  ChartBar,
+  List,
+  Calendar,
+  User,
+  MessageSquare,
   TrendingUp,
-  Menu, 
-  X 
-} from 'lucide-react';
+  Menu,
+  X,
+} from "lucide-react";
 
 type SidebarItem = {
   name: string;
   path: string;
   icon: React.ReactNode;
+  extraClass?: string;
 };
 
 const sidebarItems: SidebarItem[] = [
-  { name: 'Dashboard', path: '/dashboard', icon: <TrendingUp size={20} /> },
-  { name: 'My Tasks', path: '/tasks', icon: <List size={20} /> },
-  { name: 'Workflows', path: '/workflows', icon: <Calendar size={20} /> },
-  { name: 'Statistics', path: '/statistics', icon: <ChartBar size={20} /> },
-  { name: 'Team Tasks', path: '/team', icon: <MessageSquare size={20} /> },
-  { name: 'Profile', path: '/profile', icon: <User size={20} /> },
+  { name: "Dashboard", path: "/dashboard", icon: <TrendingUp size={20} /> },
+  { name: "My Tasks", path: "/tasks", icon: <List size={20} /> },
+  { name: "Workflows", path: "/workflows", icon: <Calendar size={20} /> },
+  { name: "Statistics", path: "/statistics", icon: <ChartBar size={20} /> },
+  { name: "Team Tasks", path: "/team", icon: <MessageSquare size={20} /> },
+  { name: "Profile", path: "/profile", icon: <User size={20} /> },
+  {
+    name: "About",
+    path: "/about",
+    icon: <span className="font-bold text-lg">i</span>,
+    extraClass: "mt-8 ml-2",
+  },
 ];
 
 export const Sidebar = () => {
@@ -48,13 +54,15 @@ export const Sidebar = () => {
       {/* Sidebar */}
       <div
         className={cn(
-          'h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 overflow-hidden',
-          collapsed ? 'w-0 md:w-16' : 'w-64'
+          "h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 overflow-hidden",
+          collapsed ? "w-0 md:w-16" : "w-64"
         )}
       >
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
-          <h1 className={cn("font-bold text-xl", collapsed && "md:hidden")}>Zest Tasks</h1>
+          <h1 className={cn("font-bold text-xl", collapsed && "md:hidden")}>
+            TaskMaster.ai
+          </h1>
           <Button
             variant="ghost"
             size="icon"
@@ -73,15 +81,18 @@ export const Sidebar = () => {
                 key={item.name}
                 to={item.path}
                 className={cn(
-                  'flex items-center px-4 py-3 rounded-md transition-colors text-sidebar-foreground',
+                  "flex items-center px-4 py-3 rounded-md transition-colors text-sidebar-foreground",
                   location.pathname === item.path
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'hover:bg-sidebar-accent/70',
-                  collapsed && 'md:justify-center md:px-2'
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "hover:bg-sidebar-accent/70",
+                  collapsed && "md:justify-center md:px-2",
+                  item.extraClass
                 )}
               >
                 <span className="mr-3">{item.icon}</span>
-                <span className={cn(collapsed && 'md:hidden')}>{item.name}</span>
+                <span className={cn(collapsed && "md:hidden")}>
+                  {item.name}
+                </span>
               </Link>
             ))}
           </nav>
@@ -89,7 +100,7 @@ export const Sidebar = () => {
 
         {/* Footer */}
         <div className={cn("p-4 text-sm", collapsed && "md:hidden")}>
-          <p>ZestTask Pilot v1.0</p>
+          <p>TaskMaster.ai v1.0</p>
         </div>
       </div>
     </div>

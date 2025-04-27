@@ -1,32 +1,39 @@
-
-import React from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { 
+import React, { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const profileFormSchema = z.object({
   username: z.string().min(2, {
@@ -37,7 +44,11 @@ const profileFormSchema = z.object({
   }),
   bio: z.string().max(160).optional(),
   urls: z.object({
-    website: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+    website: z
+      .string()
+      .url({ message: "Please enter a valid URL." })
+      .optional()
+      .or(z.literal("")),
   }),
   workHours: z.object({
     start: z.string(),
@@ -53,34 +64,82 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-const defaultValues: Partial<ProfileFormValues> = {
-  username: "johndoe",
-  email: "john.doe@example.com",
-  bio: "Task management enthusiast and productivity geek.",
-  urls: {
-    website: "https://example.com",
-  },
-  workHours: {
-    start: "09:00",
-    end: "17:00",
-  },
-  notifications: {
-    email: true,
-    push: true,
-    taskReminders: true,
-    weeklyDigest: false,
-  },
-};
-
 const Profile = () => {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (user) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error loading profile:", error);
+        } else {
+          setProfile(data);
+        }
+      }
+      setLoading(false);
+    }
+
+    loadProfile();
+  }, [user]);
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues,
+    defaultValues: {
+      username: profile?.username || user?.email?.split("@")[0] || "",
+      email: user?.email || "",
+      bio: profile?.bio || "",
+      urls: {
+        website: profile?.website || "",
+      },
+      workHours: {
+        start: profile?.work_hours_start || "09:00",
+        end: profile?.work_hours_end || "17:00",
+      },
+      notifications: {
+        email: profile?.email_notifications || false,
+        push: profile?.push_notifications || false,
+        taskReminders: profile?.task_reminders || true,
+        weeklyDigest: profile?.weekly_digest || true,
+      },
+    },
   });
 
-  function onSubmit(data: ProfileFormValues) {
-    console.log(data);
-    toast.success("Profile updated successfully!");
+  async function onSubmit(data: ProfileFormValues) {
+    if (!user) return;
+
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      username: data.username,
+      email: data.email,
+      bio: data.bio,
+      website: data.urls.website,
+      work_hours_start: data.workHours.start,
+      work_hours_end: data.workHours.end,
+      email_notifications: data.notifications.email,
+      push_notifications: data.notifications.push,
+      task_reminders: data.notifications.taskReminders,
+      weekly_digest: data.notifications.weeklyDigest,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    } else {
+      toast.success("Profile updated successfully!");
+    }
+  }
+
+  if (loading) {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -91,263 +150,264 @@ const Profile = () => {
           Manage your account settings and preferences
         </p>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* User profile card */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src="" alt="User" />
-                <AvatarFallback className="text-2xl">JD</AvatarFallback>
-              </Avatar>
-              <div className="space-y-1 text-center">
-                <h3 className="font-medium text-lg">John Doe</h3>
-                <p className="text-sm text-muted-foreground">
-                  Free Plan
-                </p>
-              </div>
-              <Button className="w-full" variant="outline">
-                Upgrade to Pro
-              </Button>
+
+      {/* User profile card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center space-y-4">
+            <Avatar className="h-24 w-24">
+              <AvatarImage
+                src={profile?.avatar_url || ""}
+                alt={user?.email || "User"}
+              />
+              <AvatarFallback className="text-2xl">
+                {user?.email?.substring(0, 2).toUpperCase() || "ZT"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="space-y-1 text-center">
+              <h3 className="font-medium text-lg">
+                {profile?.username || user?.email?.split("@")[0] || "User"}
+              </h3>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
             </div>
-            
-            <Separator className="my-6" />
-            
-            <div className="space-y-1">
-              <h4 className="text-sm font-medium">Account Summary</h4>
-              <div className="text-sm pt-2">
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Tasks created</span>
-                  <span>24</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Tasks completed</span>
-                  <span>18</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Workflows</span>
-                  <span>4</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Member since</span>
-                  <span>Apr 2025</span>
-                </div>
+          </div>
+
+          <Separator className="my-6" />
+
+          <div className="space-y-1">
+            <h4 className="text-sm font-medium">Account Summary</h4>
+            <div className="text-sm pt-2">
+              <div className="flex justify-between py-1">
+                <span className="text-muted-foreground">Member since</span>
+                <span>
+                  {new Date(user?.created_at || "").toLocaleDateString()}
+                </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Profile form */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Profile Information</CardTitle>
-            <CardDescription>
-              Update your account details and preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-4">
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Profile form */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>
+            Update your account details and preferences
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="johndoe" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Your username is visible to others.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="john.doe@example.com" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Your email is used for notifications and account
+                        recovery.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bio</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Tell us a little about yourself"
+                          className="resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Your bio will be visible on your public profile.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="urls.website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="username"
+                    name="workHours.start"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>Work Start Time</FormLabel>
                         <FormControl>
-                          <Input placeholder="johndoe" {...field} />
+                          <Input type="time" {...field} />
                         </FormControl>
-                        <FormDescription>
-                          Your username is visible to others.
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="workHours.end"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Work End Time</FormLabel>
                         <FormControl>
-                          <Input placeholder="john.doe@example.com" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Your email is used for notifications and account recovery.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="bio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bio</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Tell us a little about yourself" 
-                            className="resize-none" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Your bio will be visible on your public profile.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="urls.website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://example.com" {...field} />
+                          <Input type="time" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="workHours.start"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Work Start Time</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="workHours.end"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Work End Time</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Notification Preferences</h3>
-                  
-                  <FormField
-                    control={form.control}
-                    name="notifications.email"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Email Notifications</FormLabel>
-                          <FormDescription>
-                            Receive notifications via email.
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="notifications.push"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Push Notifications</FormLabel>
-                          <FormDescription>
-                            Receive push notifications in browser.
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="notifications.taskReminders"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Task Reminders</FormLabel>
-                          <FormDescription>
-                            Get reminders about upcoming tasks.
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="notifications.weeklyDigest"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Weekly Digest</FormLabel>
-                          <FormDescription>
-                            Receive a weekly summary of your tasks and progress.
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
                       </FormItem>
                     )}
                   />
                 </div>
-                
-                <div className="flex justify-end">
-                  <Button type="submit">Save Changes</Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">
+                  Notification Preferences
+                </h3>
+
+                <FormField
+                  control={form.control}
+                  name="notifications.email"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Email Notifications
+                        </FormLabel>
+                        <FormDescription>
+                          Receive notifications via email.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="notifications.push"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Push Notifications
+                        </FormLabel>
+                        <FormDescription>
+                          Receive push notifications in browser.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="notifications.taskReminders"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Task Reminders
+                        </FormLabel>
+                        <FormDescription>
+                          Get reminders about upcoming tasks.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="notifications.weeklyDigest"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Weekly Digest
+                        </FormLabel>
+                        <FormDescription>
+                          Receive a weekly summary of your tasks and progress.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

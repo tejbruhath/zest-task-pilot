@@ -1,18 +1,17 @@
-
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Sparkles, Send, User } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sparkles, Send, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 type Message = {
   id: string;
   content: string;
-  sender: 'user' | 'ai';
+  sender: "user" | "ai";
   timestamp: Date;
 };
 
@@ -22,24 +21,25 @@ type SuggestedPrompt = {
 };
 
 const suggestedPrompts: SuggestedPrompt[] = [
-  { id: '1', text: 'Organize my workflow' },
-  { id: '2', text: 'Show me important events' },
-  { id: '3', text: 'Summarize my tasks' },
-  { id: '4', text: 'Create a plan for the week' },
-  { id: '5', text: 'Find productive time slots' }
+  { id: "1", text: "Organize my workflow" },
+  { id: "2", text: "Show me important events" },
+  { id: "3", text: "Summarize my tasks" },
+  { id: "4", text: "Create a plan for the week" },
+  { id: "5", text: "Find productive time slots" },
 ];
 
 const AIAssistant = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '0',
-      content: "Hi there! I'm your AI assistant. How can I help you with your tasks and workflows today?",
-      sender: 'ai',
+      id: "0",
+      content:
+        "Hi there! I'm your AI assistant. How can I help you with your tasks and workflows today?",
+      sender: "ai",
       timestamp: new Date(),
-    }
+    },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -49,54 +49,66 @@ const AIAssistant = () => {
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    
+
     if (!input.trim()) return;
-    
+
     const userMessage: Message = {
       id: Date.now().toString(),
       content: input,
-      sender: 'user',
+      sender: "user",
       timestamp: new Date(),
     };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
     setIsLoading(true);
-    
+
     try {
-      // Call Perplexity API through a Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('chat', {
-        body: { message: input }
-      });
-      
-      if (error) throw error;
-      
+      // Call OpenAI API through Supabase Edge Function
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ||
+          "https://uaqriruxncwzcubjbitq.supabase.co/functions/v1/chat"
+        }`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: input }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok || !data.text)
+        throw new Error(data.error || "No response from AI");
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.text,
-        sender: 'ai',
+        sender: "ai",
         timestamp: new Date(),
       };
-      
-      setMessages(prev => [...prev, aiMessage]);
-    } catch (error) {
-      console.error('Error sending message to AI:', error);
-      toast.error('Failed to get AI response. Please try again.');
-      
+
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error: any) {
+      console.error("Error sending message to AI:", error);
+      toast.error("Failed to get AI response. Please try again.");
+
       // Add fallback message
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm having trouble connecting right now. Please try again in a moment.",
-        sender: 'ai',
+        content:
+          "I'm having trouble connecting right now. Please try again in a moment.",
+        sender: "ai",
         timestamp: new Date(),
       };
-      
-      setMessages(prev => [...prev, errorMessage]);
+
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -120,16 +132,24 @@ const AIAssistant = () => {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.sender === 'ai' ? 'justify-start' : 'justify-end'}`}
+                className={`flex ${
+                  message.sender === "ai" ? "justify-start" : "justify-end"
+                }`}
               >
                 <div
                   className={`flex max-w-[80%] space-x-2 ${
-                    message.sender === 'ai' ? 'items-start' : 'items-start flex-row-reverse'
+                    message.sender === "ai"
+                      ? "items-start"
+                      : "items-start flex-row-reverse"
                   }`}
                 >
-                  <Avatar className={message.sender === 'ai' ? 'bg-purple-100' : 'bg-blue-100'}>
+                  <Avatar
+                    className={
+                      message.sender === "ai" ? "bg-purple-100" : "bg-blue-100"
+                    }
+                  >
                     <AvatarFallback>
-                      {message.sender === 'ai' ? (
+                      {message.sender === "ai" ? (
                         <Sparkles className="h-4 w-4 text-purple-500" />
                       ) : (
                         <User className="h-4 w-4 text-blue-500" />
@@ -138,14 +158,19 @@ const AIAssistant = () => {
                   </Avatar>
                   <div
                     className={`rounded-lg p-3 ${
-                      message.sender === 'ai'
-                        ? 'bg-muted text-foreground'
-                        : 'bg-primary text-primary-foreground'
+                      message.sender === "ai"
+                        ? "bg-muted text-foreground"
+                        : "bg-primary text-primary-foreground"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {message.content}
+                    </p>
                     <p className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                 </div>
