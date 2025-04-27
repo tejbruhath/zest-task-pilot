@@ -12,19 +12,22 @@ import Workflows from '@/pages/Workflows';
 import Statistics from '@/pages/Statistics';
 import Profile from '@/pages/Profile';
 import NotFound from '@/pages/NotFound';
+import AIAssistant from '@/pages/AIAssistant';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/auth" element={<Auth />} />
-        <Route path="/" element={<AppLayout />}>
+        <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="workflows" element={<Workflows />} />
           <Route path="statistics" element={<Statistics />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="ai-assistant" element={<AIAssistant />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

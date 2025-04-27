@@ -10,7 +10,9 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Menu } from 'lucide-react';
+import { Calendar, Clock, Menu, Loader2 } from 'lucide-react';
+import { updateTaskStatus } from '@/services/taskService';
+import { toast } from 'sonner';
 
 export type Priority = 'high' | 'medium' | 'low';
 export type TaskStatus = 'pending' | 'in-progress' | 'completed';
@@ -34,6 +36,7 @@ type TaskCardProps = {
 };
 
 export const TaskCard = ({ task, onStatusChange, onEdit, onDelete }: TaskCardProps) => {
+  const [isUpdating, setIsUpdating] = React.useState(false);
   const isCompleted = task.status === 'completed';
   
   const priorityClasses = {
@@ -62,6 +65,26 @@ export const TaskCard = ({ task, onStatusChange, onEdit, onDelete }: TaskCardPro
     }).format(date);
   };
 
+  const handleStatusChange = async (checked: boolean) => {
+    try {
+      setIsUpdating(true);
+      const newStatus = checked ? 'completed' : 'pending';
+      
+      // Update in DB
+      await updateTaskStatus(task.id, newStatus as TaskStatus);
+      
+      // Then update UI
+      onStatusChange(task.id, newStatus as TaskStatus);
+      
+      toast.success(`Task ${checked ? 'completed' : 'marked as pending'}`);
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      toast.error('Failed to update task status');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className={cn(
       'task-card',
@@ -72,17 +95,22 @@ export const TaskCard = ({ task, onStatusChange, onEdit, onDelete }: TaskCardPro
         <div className="flex items-start space-x-3">
           <Checkbox 
             checked={isCompleted}
-            onCheckedChange={() => {
-              const newStatus = isCompleted ? 'pending' : 'completed';
-              onStatusChange(task.id, newStatus as TaskStatus);
-            }}
+            onCheckedChange={handleStatusChange}
+            disabled={isUpdating}
           />
           <div>
             <h3 className={cn(
               "font-medium text-lg mb-1",
               isCompleted && "line-through text-muted-foreground"
             )}>
-              {task.title}
+              {isUpdating ? (
+                <span className="inline-flex items-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {task.title}
+                </span>
+              ) : (
+                task.title
+              )}
             </h3>
             {task.description && (
               <p className="text-muted-foreground text-sm mb-2">
