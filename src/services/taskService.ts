@@ -131,3 +131,122 @@ export async function getTasks(): Promise<Task[]> {
     tags: [], // We'll need to fetch tags separately or join in the query
   }));
 }
+
+// New function to add mock tasks for the current user
+export async function addMockTasks(): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  // Common everyday mock tasks
+  const mockTasks = [
+    {
+      title: 'Prepare for Math Test',
+      description: 'Review algebra, calculus and statistics. Complete practice questions.',
+      priority: 'high',
+      status: 'pending',
+      due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),  // 3 days from now
+      user_id: user.id
+    },
+    {
+      title: 'Get Groceries',
+      description: 'Milk, eggs, bread, vegetables, fruits, and snacks for the week.',
+      priority: 'medium',
+      status: 'pending',
+      due_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),  // 1 day from now
+      user_id: user.id
+    },
+    {
+      title: 'Hit the Gym',
+      description: 'Leg day - 30 min cardio, squats, lunges, and leg press.',
+      priority: 'medium',
+      status: 'pending',
+      due_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),  // 1 day from now
+      user_id: user.id
+    },
+    {
+      title: 'Read Research Papers',
+      description: 'Complete reading the assigned papers for the literature review.',
+      priority: 'high',
+      status: 'pending',
+      due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),  // 5 days from now
+      user_id: user.id
+    },
+    {
+      title: 'Clean Apartment',
+      description: 'Vacuum, dust, laundry, and organize desk.',
+      priority: 'low',
+      status: 'pending',
+      due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),  // 2 days from now
+      user_id: user.id
+    },
+    {
+      title: 'Pay Bills',
+      description: 'Rent, utilities, phone, and internet bills.',
+      priority: 'high',
+      status: 'pending',
+      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),  // 7 days from now
+      user_id: user.id
+    },
+    {
+      title: 'Call Parents',
+      description: 'Weekly catch-up call with family.',
+      priority: 'medium',
+      status: 'pending',
+      due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),  // 2 days from now
+      user_id: user.id
+    },
+    {
+      title: 'Finish Project Report',
+      description: 'Complete the final draft and send for review.',
+      priority: 'high',
+      status: 'pending',
+      due_date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),  // 4 days from now
+      user_id: user.id
+    },
+    {
+      title: 'Meal Prep',
+      description: 'Prepare lunches and dinners for the workweek.',
+      priority: 'medium',
+      status: 'pending',
+      due_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),  // 1 day from now
+      user_id: user.id
+    },
+    {
+      title: 'Submit Assignment',
+      description: 'Final check and submit the assignment online.',
+      priority: 'high',
+      status: 'pending',
+      due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),  // 2 days from now
+      user_id: user.id
+    },
+    {
+      title: 'Morning Meditation',
+      description: 'Practice 15 minutes of mindfulness meditation.',
+      priority: 'low',
+      status: 'pending',
+      due_date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),  // 1 day from now
+      user_id: user.id
+    },
+    {
+      title: 'Update Resume',
+      description: 'Add recent projects and update skills section.',
+      priority: 'medium',
+      status: 'pending',
+      due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),  // 5 days from now
+      user_id: user.id
+    }
+  ];
+
+  // Insert all mock tasks
+  const { error } = await supabase.from("tasks").insert(mockTasks);
+
+  if (error) {
+    console.error("Error adding mock tasks:", error);
+    throw error;
+  }
+}
