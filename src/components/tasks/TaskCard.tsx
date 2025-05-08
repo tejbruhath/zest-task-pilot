@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Menu, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Menu, Loader2, Edit, Trash } from 'lucide-react';
 import { updateTaskStatus } from '@/services/taskService';
 import { toast } from 'sonner';
 
@@ -20,7 +20,7 @@ export type TaskStatus = 'pending' | 'in-progress' | 'completed';
 export type Task = {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   dueDate: Date;
   priority: Priority;
   status: TaskStatus;
@@ -70,13 +70,9 @@ export const TaskCard = ({ task, onStatusChange, onEdit, onDelete }: TaskCardPro
       setIsUpdating(true);
       const newStatus = checked ? 'completed' : 'pending';
       
-      // Update in DB
-      await updateTaskStatus(task.id, newStatus as TaskStatus);
-      
-      // Then update UI
+      // Update status via callback to parent
       onStatusChange(task.id, newStatus as TaskStatus);
       
-      toast.success(`Task ${checked ? 'completed' : 'marked as pending'}`);
     } catch (error) {
       console.error('Error updating task status:', error);
       toast.error('Failed to update task status');
@@ -146,8 +142,14 @@ export const TaskCard = ({ task, onStatusChange, onEdit, onDelete }: TaskCardPro
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(task.id)}>Edit</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDelete(task.id)}>Delete</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(task.id)} className="cursor-pointer">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(task.id)} className="cursor-pointer text-destructive">
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskStatus, Priority } from "@/components/tasks/TaskCard";
 
@@ -37,12 +38,12 @@ export async function createTask(task: TaskCreate): Promise<Task> {
   return {
     id: data.id,
     title: data.title,
-    description: data.description,
+    description: data.description || "",
     priority: data.priority as Priority,
     status: data.status as TaskStatus,
     dueDate: data.due_date ? new Date(data.due_date) : new Date(),
     workflow: task.workflow, // We don't get this back from the database directly
-    tags: task.tags,
+    tags: task.tags || [],
   };
 }
 
@@ -68,11 +69,11 @@ export async function updateTask(
   // Convert frontend Task format to database format
   const dbUpdates: any = {};
 
-  if (updates.title) dbUpdates.title = updates.title;
-  if (updates.description) dbUpdates.description = updates.description;
-  if (updates.priority) dbUpdates.priority = updates.priority;
-  if (updates.status) dbUpdates.status = updates.status;
-  if (updates.dueDate) dbUpdates.due_date = updates.dueDate.toISOString();
+  if (updates.title !== undefined) dbUpdates.title = updates.title;
+  if (updates.description !== undefined) dbUpdates.description = updates.description;
+  if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate.toISOString();
 
   const { data, error } = await supabase
     .from("tasks")
@@ -90,12 +91,12 @@ export async function updateTask(
   return {
     id: data.id,
     title: data.title,
-    description: data.description,
+    description: data.description || "",
     priority: data.priority as Priority,
     status: data.status as TaskStatus,
     dueDate: data.due_date ? new Date(data.due_date) : new Date(),
     workflow: updates.workflow, // We don't get this back from the database directly
-    tags: updates.tags,
+    tags: updates.tags || [],
   };
 }
 
@@ -122,7 +123,7 @@ export async function getTasks(): Promise<Task[]> {
   return data.map((task: any) => ({
     id: task.id,
     title: task.title,
-    description: task.description,
+    description: task.description || "",
     priority: task.priority as Priority,
     status: task.status as TaskStatus,
     dueDate: task.due_date ? new Date(task.due_date) : new Date(),

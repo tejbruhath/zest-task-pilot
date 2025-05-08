@@ -9,6 +9,152 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      badges: {
+        Row: {
+          created_at: string | null
+          description: string
+          icon_url: string | null
+          id: string
+          name: string
+          required_achievement: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          icon_url?: string | null
+          id?: string
+          name: string
+          required_achievement: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          icon_url?: string | null
+          id?: string
+          name?: string
+          required_achievement?: string
+        }
+        Relationships: []
+      }
+      career_paths: {
+        Row: {
+          beginner_timeline_months: number | null
+          created_at: string | null
+          description: string
+          id: string
+          intermediate_timeline_months: number | null
+          name: string
+          required_skills: Json | null
+          tools_platforms: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          beginner_timeline_months?: number | null
+          created_at?: string | null
+          description: string
+          id?: string
+          intermediate_timeline_months?: number | null
+          name: string
+          required_skills?: Json | null
+          tools_platforms?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          beginner_timeline_months?: number | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          intermediate_timeline_months?: number | null
+          name?: string
+          required_skills?: Json | null
+          tools_platforms?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      daily_tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          roadmap_step_id: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          xp_reward: number | null
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          roadmap_step_id?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          xp_reward?: number | null
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          roadmap_step_id?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          xp_reward?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_tasks_roadmap_step_id_fkey"
+            columns: ["roadmap_step_id"]
+            isOneToOne: false
+            referencedRelation: "roadmap_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personality_assessments: {
+        Row: {
+          analytical_score: number | null
+          completed: boolean | null
+          created_at: string | null
+          creative_score: number | null
+          id: string
+          mbti_type: string | null
+          social_score: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          analytical_score?: number | null
+          completed?: boolean | null
+          created_at?: string | null
+          creative_score?: number | null
+          id?: string
+          mbti_type?: string | null
+          social_score?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          analytical_score?: number | null
+          completed?: boolean | null
+          created_at?: string | null
+          creative_score?: number | null
+          id?: string
+          mbti_type?: string | null
+          social_score?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -32,6 +178,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      roadmap_steps: {
+        Row: {
+          career_path_id: string
+          created_at: string | null
+          description: string
+          difficulty_level: string | null
+          estimated_hours: number | null
+          id: string
+          resources: Json | null
+          step_number: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          career_path_id: string
+          created_at?: string | null
+          description: string
+          difficulty_level?: string | null
+          estimated_hours?: number | null
+          id?: string
+          resources?: Json | null
+          step_number: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          career_path_id?: string
+          created_at?: string | null
+          description?: string
+          difficulty_level?: string | null
+          estimated_hours?: number | null
+          id?: string
+          resources?: Json | null
+          step_number?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_steps_career_path_id_fkey"
+            columns: ["career_path_id"]
+            isOneToOne: false
+            referencedRelation: "career_paths"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {
@@ -175,6 +368,186 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_career_matches: {
+        Row: {
+          career_path_id: string
+          created_at: string | null
+          id: string
+          match_explanation: string | null
+          match_percentage: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          career_path_id: string
+          created_at?: string | null
+          id?: string
+          match_explanation?: string | null
+          match_percentage: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          career_path_id?: string
+          created_at?: string | null
+          id?: string
+          match_explanation?: string | null
+          match_percentage?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_career_matches_career_path_id_fkey"
+            columns: ["career_path_id"]
+            isOneToOne: false
+            referencedRelation: "career_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          age: number | null
+          career_goal: string | null
+          created_at: string | null
+          education: string | null
+          full_name: string
+          id: string
+          last_active_date: string | null
+          level: number | null
+          streak_days: number | null
+          updated_at: string | null
+          user_id: string
+          xp: number | null
+        }
+        Insert: {
+          age?: number | null
+          career_goal?: string | null
+          created_at?: string | null
+          education?: string | null
+          full_name: string
+          id?: string
+          last_active_date?: string | null
+          level?: number | null
+          streak_days?: number | null
+          updated_at?: string | null
+          user_id: string
+          xp?: number | null
+        }
+        Update: {
+          age?: number | null
+          career_goal?: string | null
+          created_at?: string | null
+          education?: string | null
+          full_name?: string
+          id?: string
+          last_active_date?: string | null
+          level?: number | null
+          streak_days?: number | null
+          updated_at?: string | null
+          user_id?: string
+          xp?: number | null
+        }
+        Relationships: []
+      }
+      user_roadmaps: {
+        Row: {
+          career_path_id: string
+          created_at: string | null
+          daily_commitment_minutes: number | null
+          id: string
+          mode: string | null
+          progress_percentage: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          career_path_id: string
+          created_at?: string | null
+          daily_commitment_minutes?: number | null
+          id?: string
+          mode?: string | null
+          progress_percentage?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          career_path_id?: string
+          created_at?: string | null
+          daily_commitment_minutes?: number | null
+          id?: string
+          mode?: string | null
+          progress_percentage?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roadmaps_career_path_id_fkey"
+            columns: ["career_path_id"]
+            isOneToOne: false
+            referencedRelation: "career_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_skills: {
+        Row: {
+          created_at: string | null
+          id: string
+          proficiency_level: number
+          skill_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          proficiency_level: number
+          skill_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          proficiency_level?: number
+          skill_name?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

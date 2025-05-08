@@ -1,9 +1,7 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { 
   Dialog, 
   DialogContent, 
@@ -16,6 +14,7 @@ import { TaskList } from '@/components/tasks/TaskList';
 import { Task, TaskStatus } from '@/components/tasks/TaskCard';
 import { Plus, TrendingUp, Calendar, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { createTask, getTasks, updateTaskStatus, deleteTask, updateTask } from '@/services/taskService';
 
 const mockTasks: Task[] = [
   {
@@ -50,8 +49,28 @@ const mockTasks: Task[] = [
 ];
 
 const Dashboard = () => {
-  const [tasks, setTasks] = React.useState<Task[]>(mockTasks);
+  const [tasks, setTasks] = React.useState<Task[]>([]);
   const [isTaskFormOpen, setIsTaskFormOpen] = React.useState(false);
+  const [editingTask, setEditingTask] = React.useState<Task | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  
+  // Load tasks from database
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setIsLoading(true);
+        const loadedTasks = await getTasks();
+        setTasks(loadedTasks);
+      } catch (error) {
+        console.error("Error loading tasks:", error);
+        toast.error("Failed to load tasks. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadTasks();
+  }, []);
   
   // Calculate task metrics
   const totalTasks = tasks.length;
@@ -65,34 +84,80 @@ const Dashboard = () => {
   
   const highPriorityTasks = tasks.filter(t => t.priority === 'high').length;
   
-  const handleAddTask = (newTask: Task) => {
-    setTasks([...tasks, newTask]);
-    setIsTaskFormOpen(false);
-    toast.success('Task created successfully!');
+  const handleAddTask = async (newTask: Task) => {
+    try {
+      const createdTask = await createTask(newTask);
+      setTasks([...tasks, createdTask]);
+      setIsTaskFormOpen(false);
+      toast.success(`Task "${newTask.title}" created successfully!`);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast.error("Failed to create task. Please try again.");
+    }
   };
   
-  const handleStatusChange = (id: string, status: TaskStatus) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, status } : task
-    ));
-    
-    toast.success(`Task ${status === 'completed' ? 'completed' : 'updated'}!`);
+  const handleStatusChange = async (id: string, status: TaskStatus) => {
+    try {
+      await updateTaskStatus(id, status);
+      setTasks(tasks.map(task => 
+        task.id === id ? { ...task, status } : task
+      ));
+      
+      toast.success(`Task ${status === 'completed' ? 'completed' : 'updated'}!`);
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      toast.error("Failed to update task status. Please try again.");
+    }
   };
   
   const handleEditTask = (id: string) => {
-    toast('Edit task functionality will be implemented in the next version');
+    const taskToEdit = tasks.find(task => task.id === id);
+    if (taskToEdit) {
+      setEditingTask(taskToEdit);
+      setIsTaskFormOpen(true);
+    }
   };
   
-  const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter(task => task.id !== id));
-    toast.success('Task deleted successfully!');
+  const handleUpdateTask = async (updatedTask: Task) => {
+    try {
+      const result = await updateTask(updatedTask.id, updatedTask);
+      setTasks(tasks.map(task => task.id === updatedTask.id ? result : task));
+      setIsTaskFormOpen(false);
+      setEditingTask(null);
+      toast.success("Task updated successfully!");
+    } catch (error) {
+      console.error("Error updating task:", error);
+      toast.error("Failed to update task. Please try again.");
+    }
+  };
+  
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteTask(id);
+      setTasks(tasks.filter(task => task.id !== id));
+      toast.success("Task deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Failed to delete task. Please try again.");
+    }
+  };
+
+  const handleFormSubmit = (task: Task) => {
+    if (editingTask) {
+      handleUpdateTask(task);
+    } else {
+      handleAddTask(task);
+    }
   };
 
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+        <Dialog open={isTaskFormOpen} onOpenChange={(open) => {
+          if (!open) setEditingTask(null);
+          setIsTaskFormOpen(open);
+        }}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <Plus size={16} />
@@ -101,9 +166,12 @@ const Dashboard = () => {
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Create a new task</DialogTitle>
+              <DialogTitle>{editingTask ? 'Edit task' : 'Create a new task'}</DialogTitle>
             </DialogHeader>
-            <TaskForm onSubmit={handleAddTask} />
+            <TaskForm 
+              onSubmit={handleFormSubmit} 
+              initialValues={editingTask || undefined} 
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -170,16 +238,20 @@ const Dashboard = () => {
             <CardDescription>Your tasks for today</CardDescription>
           </CardHeader>
           <CardContent>
-            <TaskList
-              tasks={tasks.filter(t => {
-                const today = new Date();
-                const taskDate = new Date(t.dueDate);
-                return taskDate.toDateString() === today.toDateString();
-              })}
-              onStatusChange={handleStatusChange}
-              onEdit={handleEditTask}
-              onDelete={handleDeleteTask}
-            />
+            {isLoading ? (
+              <div className="flex justify-center p-4">Loading tasks...</div>
+            ) : (
+              <TaskList
+                tasks={tasks.filter(t => {
+                  const today = new Date();
+                  const taskDate = new Date(t.dueDate);
+                  return taskDate.toDateString() === today.toDateString();
+                })}
+                onStatusChange={handleStatusChange}
+                onEdit={handleEditTask}
+                onDelete={handleDeleteTask}
+              />
+            )}
           </CardContent>
         </Card>
         
@@ -217,18 +289,22 @@ const Dashboard = () => {
           <CardDescription>Tasks due in the next 7 days</CardDescription>
         </CardHeader>
         <CardContent>
-          <TaskList
-            tasks={tasks.filter(t => {
-              const today = new Date();
-              const nextWeek = new Date();
-              nextWeek.setDate(today.getDate() + 7);
-              const taskDate = new Date(t.dueDate);
-              return taskDate > today && taskDate <= nextWeek;
-            })}
-            onStatusChange={handleStatusChange}
-            onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
-          />
+          {isLoading ? (
+            <div className="flex justify-center p-4">Loading tasks...</div>
+          ) : (
+            <TaskList
+              tasks={tasks.filter(t => {
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                const taskDate = new Date(t.dueDate);
+                return taskDate > today && taskDate <= nextWeek;
+              })}
+              onStatusChange={handleStatusChange}
+              onEdit={handleEditTask}
+              onDelete={handleDeleteTask}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

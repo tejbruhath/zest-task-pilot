@@ -78,7 +78,13 @@ export const TaskForm = ({ onSubmit, initialValues }: TaskFormProps) => {
   const handleSubmit = (values: TaskFormValues) => {
     const newTask: Task = {
       id: initialValues?.id || Math.random().toString(36).substring(2, 11),  // Temporary ID
-      ...values,
+      title: values.title,   // Required field
+      description: values.description || "",
+      dueDate: values.dueDate || new Date(),
+      priority: values.priority,
+      status: values.status,
+      workflow: values.workflow,
+      tags: values.tags,
     };
     
     onSubmit(newTask);
