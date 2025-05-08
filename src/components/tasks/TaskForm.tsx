@@ -36,7 +36,7 @@ interface TaskFormProps {
 
 const taskSchema = z.object({
   title: z.string().min(1, { message: 'Title is required' }),
-  description: z.string().optional(),
+  description: z.string().default(''),
   dueDate: z.date().optional(),
   priority: z.enum(['high', 'medium', 'low']).default('medium'),
   status: z.enum(['pending', 'in-progress', 'completed']).default('pending'),
@@ -79,7 +79,7 @@ export const TaskForm = ({ onSubmit, initialValues }: TaskFormProps) => {
     const newTask: Task = {
       id: initialValues?.id || Math.random().toString(36).substring(2, 11),  // Temporary ID
       title: values.title,   // Required field
-      description: values.description || "",
+      description: values.description || "", // Ensure description is always a string
       dueDate: values.dueDate || new Date(),
       priority: values.priority,
       status: values.status,

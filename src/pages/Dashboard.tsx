@@ -30,6 +30,7 @@ const mockTasks: Task[] = [
   {
     id: '2',
     title: 'Weekly team meeting',
+    description: '', // Added this missing property
     dueDate: new Date('2025-05-01'),
     priority: 'medium',
     status: 'pending',
