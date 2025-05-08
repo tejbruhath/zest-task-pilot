@@ -14,7 +14,7 @@ import { TaskList } from '@/components/tasks/TaskList';
 import { Task, TaskStatus } from '@/components/tasks/TaskCard';
 import { Plus, TrendingUp, Calendar, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { createTask, getTasks, updateTaskStatus, deleteTask, updateTask } from '@/services/taskService';
+import { createTask, getTasks, updateTaskStatus, deleteTask, updateTask, addMockTasks } from '@/services/taskService';
 
 const mockTasks: Task[] = [
   {
@@ -143,6 +143,19 @@ const Dashboard = () => {
     }
   };
 
+  const handleAddMockTasks = async () => {
+    try {
+      await addMockTasks();
+      toast.success("Mock tasks added successfully! Refresh to see them.");
+      // Reload tasks to show the new mock tasks
+      const loadedTasks = await getTasks();
+      setTasks(loadedTasks);
+    } catch (error) {
+      console.error("Error adding mock tasks:", error);
+      toast.error("Failed to add mock tasks. Please try again.");
+    }
+  };
+
   const handleFormSubmit = (task: Task) => {
     if (editingTask) {
       handleUpdateTask(task);
@@ -155,26 +168,36 @@ const Dashboard = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Dialog open={isTaskFormOpen} onOpenChange={(open) => {
-          if (!open) setEditingTask(null);
-          setIsTaskFormOpen(open);
-        }}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus size={16} />
-              <span>Add Task</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{editingTask ? 'Edit task' : 'Create a new task'}</DialogTitle>
-            </DialogHeader>
-            <TaskForm 
-              onSubmit={handleFormSubmit} 
-              initialValues={editingTask || undefined} 
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleAddMockTasks}
+            className="flex items-center gap-2"
+          >
+            <Plus size={16} />
+            <span>Add Mock Tasks</span>
+          </Button>
+          <Dialog open={isTaskFormOpen} onOpenChange={(open) => {
+            if (!open) setEditingTask(null);
+            setIsTaskFormOpen(open);
+          }}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus size={16} />
+                <span>Add Task</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{editingTask ? 'Edit task' : 'Create a new task'}</DialogTitle>
+              </DialogHeader>
+              <TaskForm 
+                onSubmit={handleFormSubmit} 
+                initialValues={editingTask || undefined} 
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
       {/* Stats Section */}
